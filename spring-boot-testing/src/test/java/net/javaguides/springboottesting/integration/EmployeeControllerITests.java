@@ -1,9 +1,13 @@
 package net.javaguides.springboottesting.integration;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -133,6 +137,83 @@ public class EmployeeControllerITests {
 		
 		//then - verify the result
 		response.andExpect(status().isNotFound()).andDo(print());
+	}
+	
+	@DisplayName("JUnit test for udate employee REST API")
+	@Test
+	public void givenUpdatedEmployee_whenUpdateEmployee_thenReturnUpdateEmployeeObject() throws Exception {
+
+		//given - precondition or setup
+		Employee savedEmployee = Employee.builder()
+							.firstName("Ramesh")
+							.lastName("Fadatare")
+							.email("ramesh@gmail.com")
+							.build();
+		
+		Employee updatedEmployee = Employee.builder()
+							.firstName("Ram")
+							.lastName("Jadav")
+							.email("ram@gmail.com")
+							.build();
+		employeeRepository.save(savedEmployee);
+//		given(employeeService.getEmployeeById(employeeId)).willReturn(Optional.of(savedEmployee));
+//		given(employeeService.updateEmployee(any(Employee.class))).willAnswer(invocation -> invocation.getArgument(0));
+		
+		//when - action or behavior that we are going to test
+		ResultActions response = mockMvc.perform(put("/api/employees/{id}", savedEmployee.getId())
+										.contentType(MediaType.APPLICATION_JSON)
+										.content(objectMapper.writeValueAsString(updatedEmployee)));
+		
+		//then - verify the result
+		response.andExpect(status().isOk()).andDo(print()).andExpect(jsonPath("$.firstName", is(updatedEmployee.getFirstName())))
+				.andExpect(jsonPath("$.lastName", is(updatedEmployee.getLastName()))).andExpect(jsonPath("$.email", is(updatedEmployee.getEmail())));
+	}
+	
+	@DisplayName("JUnit test for udate employee REST API negative scenario")
+	@Test
+	public void givenUpdatedEmployee_whenUpdateEmployee_thenReturn404NotFound() throws Exception {
+
+		//given - precondition or setup
+		Employee savedEmployee = Employee.builder()
+							.firstName("Ramesh")
+							.lastName("Fadatare")
+							.email("ramesh@gmail.com")
+							.build();
+		
+		Employee updatedEmployee = Employee.builder()
+							.firstName("Ram")
+							.lastName("Jadav")
+							.email("ram@gmail.com")
+							.build();
+		employeeRepository.save(savedEmployee);
+		
+		//when - action or behavior that we are going to test
+		ResultActions response = mockMvc.perform(put("/api/employees/{id}", 1L)
+										.contentType(MediaType.APPLICATION_JSON)
+										.content(objectMapper.writeValueAsString(updatedEmployee)));
+		
+		//then - verify the result
+		response.andExpect(status().isNotFound()).andDo(print());
+	}
+	
+	@DisplayName("Junit for delete employee REST api")
+	@Test
+	public void givenEmployeeId_whenDeleteEmployee_thenReturn200() throws Exception {
+
+		//given - precondition or setup
+		Employee employee = Employee.builder()
+				.firstName("Ramesh")
+				.lastName("Fadatare")
+				.email("ramesh@gmail.com")
+				.build();
+		employeeRepository.save(employee);
+		
+		//when - action or behavior that we are going to test
+		ResultActions response = mockMvc.perform(delete("/api/employees/{id}", employee.getId()));
+		
+		//then - verify the result
+		response.andExpect(status().isOk())
+				.andDo(print());
 	}
 }
 
