@@ -1,11 +1,19 @@
 package net.javaguides.springboottesting.integration;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -61,6 +69,71 @@ public class EmployeeControllerITests {
 				.andExpect(jsonPath("$.lastName", is(employee.getLastName())))
 				.andExpect(jsonPath("$.email", is(employee.getEmail())));
 	} 
+	
+	
+	@DisplayName("Given list of employees given all employees get all employees")
+	@Test
+	public void givenEmployeeList_whenGetAllEmployees_thenListOfEmployees() throws Exception {
+
+		//given - precondition or setup
+		List<Employee> listOfEmployees = new ArrayList<>();
+		listOfEmployees.add(new Employee("Rmesh", "Fatadare", "ramesh@gmail.com"));
+		listOfEmployees.add(new Employee("Tony", "Start", "tony@gmail.com"));
+		employeeRepository.saveAll(listOfEmployees);
+//		given(employeeService.getAllEmployees()).willReturn(listOfEmployees); --> no need to mock
+		
+		//when - action or behavior that we are going to test
+		ResultActions response = mockMvc.perform(get("/api/employees"));
+		
+		//then - verify the result
+		response.andExpect(status().isOk())
+		.andDo(print())
+		.andExpect(jsonPath("$.size()", is(listOfEmployees.size())));
+	}
+	
+	
+	@DisplayName("valid employee id should return employee")
+	@Test
+	public void givenValidEmployeeId_whenGetEmployeeById_thenReturnEmployee() throws Exception {
+
+		//given - precondition or setup
+		Employee employee = Employee.builder()
+							.firstName("Ramesh")
+							.lastName("Fadatare")
+							.email("ramesh@gmail.com")
+							.build();
+		employeeRepository.save(employee);
+		
+		//when - action or behavior that we are going to test
+		ResultActions response = mockMvc.perform(get("/api/employees/{id}", employee.getId()));
+		
+		//then - verify the result
+		response.andExpect(status().isOk())
+			.andDo(print())
+			.andExpect(jsonPath("$.firstName", is(employee.getFirstName())))
+			.andExpect(jsonPath("$.lastName", is(employee.getLastName())))
+			.andExpect(jsonPath("$.email", is(employee.getEmail())));
+
+	}
+	
+	@DisplayName("In valid employee id should return employee")
+	@Test
+	public void givenInValidEmployeeId_whenGetEmployeeById_thenReturnEmpty() throws Exception {
+
+		//given - precondition or setup
+		Employee employee = Employee.builder()
+							.firstName("Ramesh")
+							.lastName("Fadatare")
+							.email("ramesh@gmail.com")
+							.build();
+		employeeRepository.save(employee);
+		
+		//when - action or behavior that we are going to test
+		ResultActions response = mockMvc.perform(get("/api/employees/{id}", 1l));//send any invalid id
+		
+		//then - verify the result
+		response.andExpect(status().isNotFound()).andDo(print());
+	}
 }
 
 
